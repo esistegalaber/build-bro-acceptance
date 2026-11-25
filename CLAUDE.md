@@ -32,8 +32,11 @@ MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't s
 - **Running the tests wipes the local `build_bruh` database.** Before running them for the user, ask
   first or use `RESET_DB=false`. To test against a throwaway DB: start MariaDB on another port and set
   `DB_PORT` and `SPRING_DATASOURCE_URL=jdbc:mariadb://localhost:<port>/build_bruh`.
-- Tests are user journeys through the UI. Locate elements by role, label or text, not CSS classes. When
-  the UI lacks an accessible handle, add one in build-bro-ui (separate PR) instead of a brittle selector.
+- Tests are user journeys through the UI. Locate elements by role, label or text, not CSS classes. Where
+  that isn't enough, `getByTestId()` finds the UI's existing `data-cy-id` attributes (`testIdAttribute`
+  in the config). When the UI lacks any handle, add one in build-bro-ui (separate PR).
+- Icons are ligature text (`material-icons`), so an element's text includes icon names
+  (`inventory_290Builds`). Match exact child texts rather than `toContainText` on a whole card.
 - Test data comes from build-bro-api's `testdata.sql`. A test that needs other data creates it through
   the `api` fixture. A change to `testdata.sql` belongs in build-bro-api (and its copy in build-bro-ui).
 - `workers: 1` while tests share the database. Raise it only once tests own their data.

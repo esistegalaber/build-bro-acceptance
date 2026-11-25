@@ -14,6 +14,8 @@ export default defineConfig({
 
   use: {
     baseURL: env.baseUrl,
+    // build-bro-ui marks elements with data-cy-id; getByTestId() finds them. Prefer roles, labels and text.
+    testIdAttribute: 'data-cy-id',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
