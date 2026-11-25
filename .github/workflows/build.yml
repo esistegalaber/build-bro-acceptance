@@ -82,7 +82,7 @@ jobs:
         working-directory: build-bro-api
         run: ./mvnw -B -q -DskipTests compile
 
-      # ng serve needs no install scripts (not even Cypress's binary download)
+      # ng serve needs no install scripts
       - name: Install the UI
         working-directory: build-bro-ui
         run: npm ci --ignore-scripts
