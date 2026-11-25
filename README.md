@@ -19,7 +19,7 @@ Other locations: set `API_DIR` and `UI_DIR`.
 
 ## Running
 
-1. Install: `npm ci`, then `npm run browsers:install` (once, downloads Chromium).
+1. Install: `nvm use` (Node from `.nvmrc`), `npm ci`, then `npm run browsers:install` (once, downloads Chromium).
 2. Start MariaDB (see the workspace `CLAUDE.md` or the `run-stack` skill). Playwright doesn't start the
    database.
 3. `npm test`
