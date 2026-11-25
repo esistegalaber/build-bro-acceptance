@@ -6,7 +6,7 @@ The README has the setup and every environment variable.
 
 ## Commands
 
-- `npm ci` and `npm run browsers:install` (once)
+- `nvm use` (Node from `.nvmrc`, also used by CI), then `npm ci` and `npm run browsers:install` (once)
 - `npm test`: boots the API and UI (or reuses running ones), resets the DB, runs the tests
 - `npm run typecheck`: run after every change. Playwright itself doesn't type-check.
 - `npx playwright test tests/foo.spec.ts`, `--headed`, `--ui`, `--debug` for single tests and debugging
