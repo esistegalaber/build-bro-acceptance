@@ -38,6 +38,7 @@ already run on `:8080` and `:4200`. It then resets the database to build-bro-api
 | `npm run test:ui` | Playwright's UI mode: pick, watch and debug tests |
 | `npm run report` | Opens the HTML report of the last run (with traces of failed tests) |
 | `npm run typecheck` | `tsc` over config, setup and tests |
+| `npm run lint` | ESLint with the Playwright rules |
 
 ## Configuration
 
@@ -56,9 +57,13 @@ All settings are environment variables (`support/env.ts`):
 
 ## Writing tests
 
-- Specs go in `tests/` as `*.spec.ts`.
-- Import `test` and `expect` from `support/fixtures.ts`, not from `@playwright/test`. The fixtures file
-  adds an `api` request context for the API, and shared fixtures (page objects, logins) go there too.
+- Specs go in `tests/<feature>/` as `*.spec.ts` (one folder per UI feature, `tests/journeys/` for flows
+  across pages).
+- Import `test` and `expect` from `support/fixtures.ts`, not from `@playwright/test`. It provides the
+  page objects (`support/pages/`) and an `api` request context as fixtures.
+- Page objects hold locators and actions, specs hold the assertions.
+- Tests that change data create their own (through the API, with unique names) instead of changing the
+  `testdata.sql` baseline.
 - Tests can rely on the data in `testdata.sql`. Until they create their own data, they run one at a time
   (`workers: 1`).
 - Find elements the way a user does: `getByRole`, `getByLabel`, `getByText`.

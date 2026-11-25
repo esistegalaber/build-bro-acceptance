@@ -96,6 +96,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Warnings fail CI too (waitForTimeout, skipped tests, ...)
+      - name: Lint
+        run: npm run lint -- --max-warnings 0
+
       - name: Acceptance tests
         run: npx playwright test
 
