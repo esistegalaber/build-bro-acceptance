@@ -8,7 +8,9 @@ The README has the setup and every environment variable.
 
 - `nvm use` (Node from `.nvmrc`, also used by CI), then `npm ci` and `npm run browsers:install` (once)
 - `npm test`: boots the API and UI (or reuses running ones), resets the DB, runs the tests
-- `npm run typecheck`: run after every change. Playwright itself doesn't type-check.
+- `npm run typecheck` and `npm run lint`: run both after every change. Playwright itself doesn't type-check, and
+  ESLint (`eslint.config.js`: type-checked typescript-eslint plus eslint-plugin-playwright) catches a missing
+  `await`, `waitForTimeout` and focused or skipped tests. CI fails on lint warnings too.
 - `npx playwright test tests/foo.spec.ts`, `--headed`, `--ui`, `--debug` for single tests and debugging
 
 MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't start it.
@@ -24,8 +26,24 @@ MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't s
   `src/test/resources/testdata.sql` (deletes all rows, inserts the test data) through the `mariadb`
   driver. The browser projects depend on it, so it runs after the web servers are up and Flyway has
   created the schema.
-- `support/fixtures.ts`: specs import `test` / `expect` from here. Shared fixtures go here (`api` is a
-  request context for the API).
+- `support/fixtures.ts`: specs import `test` / `expect` from here. Page objects and shared helpers are
+  fixtures (`api`: a request context for the API; `homePage`, ...).
+- `support/pages/`: one page object per UI page (`home.page.ts` → `HomePage`), shared parts (side nav,
+  paginator, ...) in `pages/components/`.
+- `tests/<feature>/`: specs, one folder per UI feature folder (`home`, `builds`, `build-sets`,
+  `deployments`, `servers`, `labels`, `projects`); `tests/journeys/` for flows across several pages.
+
+## Writing specs
+
+- **One spec file per area of behaviour**, grouped with `test.describe`. Test titles say the outcome the
+  user sees ("pinning a build keeps it in the set after reload").
+- **Page objects hold locators and actions; specs hold the assertions.** A page object exposes `Locator`s
+  and methods such as `open()` or `pin(project, buildNumber)` and never calls `expect`. Specs get them as
+  fixtures (`async ({homePage}) => ...`), never with `new`. A new page object: a file in
+  `support/pages/` and an entry in `support/fixtures.ts`.
+- **Test data:** tests that only read may rely on the `testdata.sql` baseline. Tests that change data
+  create their own through the `api` fixture, with unique names, and remove it afterwards. Never change
+  or delete baseline rows. Counts (like the home stats) only hold while no test adds data alongside them.
 
 ## Conventions
 

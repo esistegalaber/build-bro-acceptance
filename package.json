@@ -13,12 +13,17 @@
     "test:ui": "playwright test --ui",
     "report": "playwright show-report",
     "typecheck": "tsc",
-    "browsers:install": "playwright install chromium"
+    "browsers:install": "playwright install chromium",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.1",
     "@types/node": "26.6.6",
+    "eslint": "10.15.0",
+    "eslint-plugin-playwright": "2.12.2",
     "mariadb": "3.5.5",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.73.0"
   }
 }
