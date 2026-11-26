@@ -15,21 +15,20 @@ Work/
 └── build-bro-acceptance/   ← this repo
 ```
 
-Other locations: set `API_DIR` and `UI_DIR`.
-
 ## Running
 
-1. Install: `nvm use` (Node from `.nvmrc`), `npm ci`, then `npm run browsers:install` (once, downloads Chromium).
+1. Install: `nvm use` (Node from `.nvmrc`), `sdk env` (the API's JDK from `.sdkmanrc`), `npm ci`, then `npm run browsers:install` (once, downloads Chromium).
 2. Start MariaDB (see the workspace `CLAUDE.md` or the `run-stack` skill). Playwright doesn't start the
    database.
 3. `npm test`
 
 `npm test` starts the API (`./mvnw spring-boot:run`) and the UI (`npm start`), or reuses them when they
-already run on `:8080` and `:4200`. It then resets the database to build-bro-api's
-`src/test/resources/testdata.sql` and runs the tests in Chromium.
+already run on `:8080` and `:4200`, and runs the tests in Chromium. Before **each** test it resets the
+database to build-bro-api's `src/test/resources/testdata.sql`.
 
-> **The reset deletes all data in the `build_bruh` database.** Use `RESET_DB=false` to keep it, or point
-> the tests at another database (`DB_PORT`, and the same database for the API via `SPRING_DATASOURCE_URL`).
+> **The reset deletes all data in the `build_bruh` database.** To keep it, point the tests and the API at
+> a throwaway database: `DB_PORT` for the tests, `SPRING_DATASOURCE_URL` for the API (Playwright passes it
+> on when it starts the API).
 
 | Script | What it does |
 |---|---|
@@ -42,18 +41,18 @@ already run on `:8080` and `:4200`. It then resets the database to build-bro-api
 
 ## Configuration
 
-All settings are environment variables (`support/env.ts`):
+The suite always runs against the sibling checkouts: the UI on `http://localhost:4200`, the API on
+`http://localhost:8080`, the data from `../build-bro-api/src/test/resources/testdata.sql`. Only the
+database is configurable (`support/env.ts`):
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `BASE_URL` | `http://localhost:4200` | Where the browser opens the app |
-| `API_URL` | `http://localhost:8080` | The API, for direct calls from tests |
-| `STACK` | `local` | `external`: don't start the API and UI, test what runs at `BASE_URL` / `API_URL` |
-| `API_DIR`, `UI_DIR` | sibling folders | The checkouts Playwright starts |
-| `API_JAVA_HOME` | the JDK in build-bro-api's `.sdkmanrc` if sdkman has it | JDK for the API |
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | `localhost`, `3306`, `build_bruh` ×3 | The API's database, for the reset |
-| `RESET_DB` | `true` | `false` skips the reset |
-| `TEST_DATA_SQL` | build-bro-api's `testdata.sql` | Data loaded by the reset |
+
+The defaults are the local `build_bruh`, which a reused dev API reads too.
+
+The API runs on the shell's `JAVA_HOME`. Locally, this repo's `.sdkmanrc` selects the JDK; it must match
+build-bro-api's Java version. On CI, `setup-java` sets it.
 
 ## Writing tests
 
@@ -62,10 +61,10 @@ All settings are environment variables (`support/env.ts`):
 - Import `test` and `expect` from `support/fixtures.ts`, not from `@playwright/test`. It provides the
   page objects (`support/pages/`) and an `api` request context as fixtures.
 - Page objects hold locators and actions, specs hold the assertions.
-- Tests that change data create their own (through the API, with unique names) instead of changing the
-  `testdata.sql` baseline.
-- Tests can rely on the data in `testdata.sql`. Until they create their own data, they run one at a time
-  (`workers: 1`).
+- Every test starts from build-bro-api's `testdata.sql`: an automatic fixture resets the database before
+  each test. Tests may create, change or delete any data, including baseline rows, and don't clean up
+  afterwards. Fixed names are fine. Never assert on IDs the API generates.
+- The tests run one at a time (`workers: 1`) until there is a database per worker.
 - Find elements the way a user does: `getByRole`, `getByLabel`, `getByText`.
 
 ## CI

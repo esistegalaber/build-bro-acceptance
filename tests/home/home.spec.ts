@@ -1,6 +1,6 @@
 import {expect, test} from '../../support/fixtures'
 
-// The expected values come from build-bro-api's testdata.sql, which the setup project loads.
+// The expected values come from build-bro-api's testdata.sql, which the database is reset to before each test.
 test('the home page shows what Build Bruh knows from the test data', async ({homePage}) => {
   await homePage.open()
 
