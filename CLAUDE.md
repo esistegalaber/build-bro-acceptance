@@ -1,29 +1,37 @@
 # CLAUDE.md: build-bro-acceptance
 
 Acceptance tests for Build Bruh: Playwright (TypeScript) against a live build-bro-api and build-bro-ui.
-It runs against the sibling folders `../build-bro-api` and `../build-bro-ui` only.
-The README has the setup and the environment variables (only `DB_*`).
+`npm test` runs against their published Docker images (#16), `npm run test:dev` against dev servers that
+already run. The README has the setup and the environment variables (`API_IMAGE`, `UI_IMAGE`, `DB_*`).
 
 ## Commands
 
-- `nvm use` (Node from `.nvmrc`, also used by CI) and `sdk env` (JDK from `.sdkmanrc`, for the API), then
-  `npm ci` and `npm run browsers:install` (once)
-- `npm test`: boots the API and UI (or reuses running ones), runs the tests, each on a freshly reset DB
+- `nvm use` (Node from `.nvmrc`, also used by CI), then `npm ci` and `npm run browsers:install` (once).
+  Docker must run; no JDK and no sibling checkouts are needed.
+- `npm test`: starts the API and UI images and a throwaway MariaDB, runs the tests, each on a freshly reset
+  DB, removes the containers. Safe to run any time: it never touches the local database.
+- `npm run test:dev` (`STACK=dev`): the same against the dev servers on `:4200`/`:8080`; starts nothing
 - `npm run typecheck` and `npm run lint`: run both after every change. Playwright itself doesn't type-check, and
   ESLint (`eslint.config.js`: type-checked typescript-eslint plus eslint-plugin-playwright) catches a missing
   `await`, `waitForTimeout` and focused or skipped tests. CI fails on lint warnings too.
 - `npx playwright test tests/foo.spec.ts`, `--headed`, `--ui`, `--debug` for single tests and debugging
 
-MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't start it.
-
 ## How it works
 
-- `playwright.config.ts`: `webServer` starts the API (`./mvnw spring-boot:run`, ready when it serves
-  `/openapi/build-bro-api.yaml`, so Flyway has migrated) and the UI (`npm start`) from the sibling
-  folders. Running instances are reused, except on CI. The API gets the shell's `JAVA_HOME`: locally
-  from this repo's `.sdkmanrc`, on CI from `setup-java`. **`.sdkmanrc` must match build-bro-api's Java
-  version.**
-- `support/env.ts`: the fixed paths and URLs, and the database settings (`DB_*` variables).
+- `support/stack.ts`: Playwright's `globalSetup` (its returned function is the teardown). With Testcontainers
+  it starts `mariadb:10.10`, the API (`API_IMAGE`) and the UI (`UI_IMAGE`, `BUILDZ_API=api`) on their own
+  Docker network, on random host ports. Ready means the API's `/actuator/health/readiness` and the UI's `/`
+  answer 200. The images are amd64 only, requested as `linux/amd64` (emulated on Apple Silicon, so the
+  startup timeout is generous). Registry references are always pulled (`main` moves), local ones never. It
+  passes the URLs and the database port on in `BB_*` variables (`stackEnv`); the workers inherit them.
+  It prints the images with their digests (also into `container-logs/images.md`, which CI puts into the job
+  summary) and streams the API's and UI's logs into `container-logs/` (not `test-results/`, which Playwright
+  empties). With `STACK=dev` it does nothing. Testcontainers' Ryuk container removes everything even when a
+  run crashes.
+- `support/env.ts`: the image references, the URLs and the database settings. Getters, read on every access,
+  because `globalSetup` sets the `BB_*` variables after the module has loaded. Without them (`test:dev`) the
+  local defaults apply. `baseURL` is a fixture override in `support/fixtures.ts`, since the config is read
+  before `globalSetup` runs.
 - `support/database.ts`: `resetDatabase()` runs `data/testdata.sql` (deletes all rows, inserts the test
   data with fixed IDs) through the `mariadb` driver. Its first reset on a connection fails with
   `testdata.sql doesn't empty: <table>` when a table in the schema has no `delete from` in the file.
@@ -50,10 +58,8 @@ MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't s
 
 ## Conventions
 
-- **Running the tests wipes the local `build_bruh` database.** Before running them for the user, ask
-  first, or point the tests and the API at a throwaway database: start MariaDB on another port and set
-  `DB_PORT` and `SPRING_DATASOURCE_URL=jdbc:mariadb://localhost:<port>/build_bruh` (with no API already
-  running on `:8080`, which would be reused).
+- **`npm test` uses its own throwaway database**, so it can run any time. **`npm run test:dev` wipes the
+  database the dev API uses** (by default the local `build_bruh`): ask before running it for the user.
 - Tests are user journeys through the UI. Locate elements by role, label or text, not CSS classes. Where
   that isn't enough, `getByTestId()` finds the UI's `data-testid` attributes (Playwright's default).
   When the UI lacks any handle, add one in build-bro-ui (separate PR); better a role or label than a test ID.
@@ -68,4 +74,5 @@ MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't s
   every table, so a second worker would lose its data mid-test.
 - Dependencies are pinned to exact versions. Upgrade `@playwright/test` and the browsers together
   (`npm run browsers:install`).
-- CI: `.github/workflows/build.yml`, actions pinned to commit SHAs like the other repos.
+- CI: `.github/workflows/build.yml` checks out only this repo and runs `npm test` (`workflow_dispatch` takes
+  `api_tag`/`ui_tag`); actions pinned to commit SHAs like the other repos.

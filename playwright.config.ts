@@ -1,5 +1,4 @@
 import {defineConfig, devices} from '@playwright/test'
-import {env} from './support/env'
 
 const isCI = !!process.env.CI
 
@@ -13,8 +12,12 @@ export default defineConfig({
   retries: isCI ? 1 : 0,
   reporter: isCI ? [['github'], ['html', {open: 'never'}]] : [['list'], ['html', {open: 'never'}]],
 
+  // Starts the API, the UI and a throwaway MariaDB from Docker images and stops them afterwards (its returned
+  // function is the teardown); does nothing with STACK=dev (`npm run test:dev`). See support/stack.ts.
+  globalSetup: './support/stack.ts',
+
   use: {
-    baseURL: env.baseUrl,
+    // baseURL comes from support/fixtures.ts: the UI's port is only known after globalSetup
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -29,31 +32,5 @@ export default defineConfig({
     // More browsers when needed:
     // {name: 'firefox', use: {...devices['Desktop Firefox']}},
     // {name: 'webkit', use: {...devices['Desktop Safari']}},
-  ],
-
-  // Boots the real stack from the sibling checkouts (the database must already run, see README).
-  // Locally, instances that already listen on the ports are reused; on CI, Playwright always starts its
-  // own. The API runs on the shell's JAVA_HOME: this repo's .sdkmanrc locally, setup-java on CI.
-  webServer: [
-    {
-      name: 'API',
-      command: './mvnw -B -q spring-boot:run',
-      cwd: env.apiDir,
-      url: `${env.apiUrl}/openapi/build-bro-api.yaml`,
-      reuseExistingServer: !isCI,
-      timeout: 240_000,
-      stdout: 'ignore',
-      stderr: 'pipe',
-    },
-    {
-      name: 'UI',
-      command: 'npm start',
-      cwd: env.uiDir,
-      url: env.baseUrl,
-      reuseExistingServer: !isCI,
-      timeout: 240_000,
-      stdout: 'ignore',
-      stderr: 'pipe',
-    },
   ],
 })
