@@ -27,5 +27,6 @@ export const env = {
     password: process.env.DB_PASSWORD ?? 'build_bruh',
     database: process.env.DB_NAME ?? 'build_bruh',
   },
-  testDataSql: path.join(apiDir, 'src/test/resources/testdata.sql'),
+  /** This repo's own test data (build-bro-acceptance#14), not build-bro-api's copy. */
+  testDataSql: path.resolve(import.meta.dirname, '..', 'data', 'testdata.sql'),
 }

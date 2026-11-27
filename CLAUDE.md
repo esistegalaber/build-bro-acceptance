@@ -24,8 +24,9 @@ MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't s
   from this repo's `.sdkmanrc`, on CI from `setup-java`. **`.sdkmanrc` must match build-bro-api's Java
   version.**
 - `support/env.ts`: the fixed paths and URLs, and the database settings (`DB_*` variables).
-- `support/database.ts`: `resetDatabase()` runs build-bro-api's `src/test/resources/testdata.sql`
-  (deletes all rows, inserts the test data with fixed IDs) through the `mariadb` driver.
+- `support/database.ts`: `resetDatabase()` runs `data/testdata.sql` (deletes all rows, inserts the test
+  data with fixed IDs) through the `mariadb` driver. Its first reset on a connection fails with
+  `testdata.sql doesn't empty: <table>` when a table in the schema has no `delete from` in the file.
 - `support/fixtures.ts`: specs import `test` / `expect` from here. Page objects and shared helpers are
   fixtures (`api`: a request context for the API; `homePage`, ...). A worker-scoped `database` fixture
   holds one connection; the automatic `resetDatabase` fixture resets the database before **every** test.
@@ -42,7 +43,7 @@ MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't s
   and methods such as `open()` or `pin(project, buildNumber)` and never calls `expect`. Specs get them as
   fixtures (`async ({homePage}) => ...`), never with `new`. A new page object: a file in
   `support/pages/` and an entry in `support/fixtures.ts`.
-- **Test data:** every test starts from build-bro-api's `testdata.sql`: an automatic fixture resets the
+- **Test data:** every test starts from `data/testdata.sql`: an automatic fixture resets the
   database before each test. Tests may create, change or delete any data, including baseline rows, and
   don't clean up afterwards. Fixed names are fine. Never assert on IDs the API generates (the reset
   leaves `AUTO_INCREMENT` counters as they are).
@@ -58,8 +59,11 @@ MariaDB must already run (the workspace `run-stack` skill). Playwright doesn't s
   When the UI lacks any handle, add one in build-bro-ui (separate PR); better a role or label than a test ID.
 - Icons are ligature text (`material-icons`), so an element's text includes icon names
   (`inventory_290Builds`). Match exact child texts rather than `toContainText` on a whole card.
-- Test data comes from build-bro-api's `testdata.sql`. A test that needs other data creates it through
-  the `api` fixture or the UI. A change to `testdata.sql` belongs in build-bro-api.
+- **This repo owns `data/testdata.sql`** (#14). It was copied from build-bro-api's
+  `src/test/resources/testdata.sql` (the header names the commit) and doesn't follow changes to that
+  file; don't sync it. Change it when a build-bro-api migration breaks it or a story needs other data.
+  A table added in build-bro-api must be added to its delete list in FK-safe order; the reset fails
+  until it is. A test that needs other data can also create it through the `api` fixture or the UI.
 - `workers: 1` and `fullyParallel: false` stay until there is a database per worker: a reset deletes
   every table, so a second worker would lose its data mid-test.
 - Dependencies are pinned to exact versions. Upgrade `@playwright/test` and the browsers together

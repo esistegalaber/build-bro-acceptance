@@ -24,7 +24,7 @@ Work/
 
 `npm test` starts the API (`./mvnw spring-boot:run`) and the UI (`npm start`), or reuses them when they
 already run on `:8080` and `:4200`, and runs the tests in Chromium. Before **each** test it resets the
-database to build-bro-api's `src/test/resources/testdata.sql`.
+database to this repo's `data/testdata.sql`.
 
 > **The reset deletes all data in the `build_bruh` database.** To keep it, point the tests and the API at
 > a throwaway database: `DB_PORT` for the tests, `SPRING_DATASOURCE_URL` for the API (Playwright passes it
@@ -42,7 +42,7 @@ database to build-bro-api's `src/test/resources/testdata.sql`.
 ## Configuration
 
 The suite always runs against the sibling checkouts: the UI on `http://localhost:4200`, the API on
-`http://localhost:8080`, the data from `../build-bro-api/src/test/resources/testdata.sql`. Only the
+`http://localhost:8080`. The test data is this repo's own `data/testdata.sql`. Only the
 database is configurable (`support/env.ts`):
 
 | Variable | Default | Meaning |
@@ -61,9 +61,13 @@ build-bro-api's Java version. On CI, `setup-java` sets it.
 - Import `test` and `expect` from `support/fixtures.ts`, not from `@playwright/test`. It provides the
   page objects (`support/pages/`) and an `api` request context as fixtures.
 - Page objects hold locators and actions, specs hold the assertions.
-- Every test starts from build-bro-api's `testdata.sql`: an automatic fixture resets the database before
+- Every test starts from `data/testdata.sql`: an automatic fixture resets the database before
   each test. Tests may create, change or delete any data, including baseline rows, and don't clean up
   afterwards. Fixed names are fine. Never assert on IDs the API generates.
+- `data/testdata.sql` belongs to this repo. It was copied from build-bro-api's
+  `src/test/resources/testdata.sql` (the header names the commit) and doesn't follow changes to that file.
+  A table added in a build-bro-api migration must be added to its delete list (FK-safe order): until it
+  is, the reset fails with `testdata.sql doesn't empty: <table>`.
 - The tests run one at a time (`workers: 1`) until there is a database per worker.
 - Find elements the way a user does: `getByRole`, `getByLabel`, `getByText`.
 
