@@ -22,6 +22,12 @@ type WorkerFixtures = {
 }
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
+  // The UI's URL is only known after globalSetup has started it (support/stack.ts), so not in the config
+  // eslint-disable-next-line no-empty-pattern
+  baseURL: async ({}, use) => {
+    await use(env.baseUrl)
+  },
+
   database: [
     // Playwright reads a fixture's dependencies from its first parameter, which must be destructured
     // eslint-disable-next-line no-empty-pattern

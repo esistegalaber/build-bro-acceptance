@@ -4,35 +4,31 @@ Acceptance tests for Build Bruh. [Playwright](https://playwright.dev) drives a r
 live [build-bro-api](https://github.com/esistegalaber/build-bro-api) and
 [build-bro-ui](https://github.com/esistegalaber/build-bro-ui), the way a user would.
 
-## Layout
-
-The repo expects the other projects next to it (the Build Bruh workspace layout):
-
-```
-Work/
-├── build-bro-api/
-├── build-bro-ui/
-└── build-bro-acceptance/   ← this repo
-```
-
 ## Running
 
-1. Install: `nvm use` (Node from `.nvmrc`), `sdk env` (the API's JDK from `.sdkmanrc`), `npm ci`, then `npm run browsers:install` (once, downloads Chromium).
-2. Start MariaDB (see the workspace `CLAUDE.md` or the `run-stack` skill). Playwright doesn't start the
-   database.
-3. `npm test`
+Needs Node (`.nvmrc`) and Docker. No checkouts of the other projects, no JDK.
 
-`npm test` starts the API (`./mvnw spring-boot:run`) and the UI (`npm start`), or reuses them when they
-already run on `:8080` and `:4200`, and runs the tests in Chromium. Before **each** test it resets the
-database to this repo's `data/testdata.sql`.
+1. Install: `nvm use`, `npm ci`, then `npm run browsers:install` (once, downloads Chromium).
+2. `npm test`
 
-> **The reset deletes all data in the `build_bruh` database.** To keep it, point the tests and the API at
-> a throwaway database: `DB_PORT` for the tests, `SPRING_DATASOURCE_URL` for the API (Playwright passes it
-> on when it starts the API).
+`npm test` starts the published images of the API and the UI (`main` by default) and a throwaway MariaDB with
+[Testcontainers](https://node.testcontainers.org), on random ports, and runs the tests in Chromium. Before
+**each** test it resets that database to this repo's `data/testdata.sql`. Afterwards the containers are
+removed. Your local database and any dev servers you run are not touched. At the start it prints which images
+it tests, with their digests; the API's and the UI's logs go to `container-logs/`.
+
+The images are amd64 only. On Apple Silicon they run emulated: it works, the API just starts slower.
+
+To test against the dev servers you already run (the UI's `npm start` on `:4200`, the API on `:8080`, e.g. via
+the workspace `run-stack` skill), use `npm run test:dev`. That starts nothing.
+
+> **`npm run test:dev` resets the database the dev API uses: by default the local `build_bruh`, all of whose
+> data it deletes.**
 
 | Script | What it does |
 |---|---|
-| `npm test` | Runs all tests headless |
+| `npm test` | Runs all tests headless, against the images |
+| `npm run test:dev` | The same, against the dev servers already running on `:4200` and `:8080` |
 | `npm run test:headed` | The same, with a visible browser |
 | `npm run test:ui` | Playwright's UI mode: pick, watch and debug tests |
 | `npm run report` | Opens the HTML report of the last run (with traces of failed tests) |
@@ -41,18 +37,18 @@ database to this repo's `data/testdata.sql`.
 
 ## Configuration
 
-The suite always runs against the sibling checkouts: the UI on `http://localhost:4200`, the API on
-`http://localhost:8080`. The test data is this repo's own `data/testdata.sql`. Only the
-database is configurable (`support/env.ts`):
+`support/env.ts` reads these variables. The test data is always this repo's own `data/testdata.sql`.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | `localhost`, `3306`, `build_bruh` ×3 | The API's database, for the reset |
+| `API_IMAGE` | `ghcr.io/esistegalaber/build-bro-api:main` | The API image `npm test` runs |
+| `UI_IMAGE` | `ghcr.io/esistegalaber/build-bro-ui:main` | The UI image `npm test` runs |
+| `DB_HOST`, `DB_PORT` | `localhost`, `3306` | `test:dev` only: the dev API's database, for the reset |
+| `DB_USER`, `DB_PASSWORD`, `DB_NAME` | `build_bruh` ×3 | The database credentials (also those of the throwaway database) |
 
-The defaults are the local `build_bruh`, which a reused dev API reads too.
-
-The API runs on the shell's `JAVA_HOME`. Locally, this repo's `.sdkmanrc` selects the JDK; it must match
-build-bro-api's Java version. On CI, `setup-java` sets it.
+Any image reference works: a release (`:1.2.0`), one commit of `main` (`:sha-abc1234`), a pull request
+(`:pr-42`, while the PR is open) or an image you built yourself (`build-bro-ui:dev`). Registry references
+(`ghcr.io/...`) are pulled on every run, because tags like `main` move; local ones are used as they are.
 
 ## Writing tests
 
@@ -73,7 +69,7 @@ build-bro-api's Java version. On CI, `setup-java` sets it.
 
 ## CI
 
-`.github/workflows/build.yml` checks out this repo, build-bro-api and build-bro-ui side by side and
-starts MariaDB as a service. Playwright then boots the API and the UI and runs the tests. It runs on
-push, on pull requests, nightly, and by hand (`workflow_dispatch`, which can run against other API or UI
-branches). The HTML report is kept as the `playwright-report` artifact.
+`.github/workflows/build.yml` checks out only this repo and runs `npm test` against the published images.
+It runs on push, on pull requests, nightly, and by hand (`workflow_dispatch`, with an image tag for the API
+and one for the UI, e.g. `pr-42`). The job summary names the images and their digests. The HTML report and
+`container-logs/` are kept as the `playwright-report` artifact.

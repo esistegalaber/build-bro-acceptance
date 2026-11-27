@@ -5,14 +5,14 @@ on:
     branches: [ "main" ]
   pull_request:
     types: [ opened, synchronize, reopened ]
-  # Run by hand, optionally against branches of the API and the UI
+  # Run by hand, optionally against other images of the API and the UI (feature images: pr-<N>)
   workflow_dispatch:
     inputs:
-      api_ref:
-        description: build-bro-api branch, tag or SHA
+      api_tag:
+        description: 'build-bro-api image tag: main, pr-<N>, sha-<7> or a release X.Y.Z'
         default: main
-      ui_ref:
-        description: build-bro-ui branch, tag or SHA
+      ui_tag:
+        description: 'build-bro-ui image tag: main, pr-<N>, sha-<7> or a release X.Y.Z'
         default: main
   # Nightly, to catch breaking changes merged into the API or the UI
   schedule:
@@ -21,71 +21,26 @@ on:
 permissions:
   contents: read
 
-# Checks out this repo next to build-bro-api and build-bro-ui (the workspace layout), starts MariaDB as a
-# service container and lets Playwright boot the API and the UI (playwright.config.ts, webServer).
+# Runs the suite against the published images of the API and the UI (#16): support/stack.ts starts them
+# and a throwaway MariaDB with Testcontainers (Docker is preinstalled on ubuntu-latest). No checkout of the
+# other repos, no JDK.
 # Actions are pinned to full commit SHAs (a tag can be moved to other code); the comment names the version.
 jobs:
   acceptance:
     name: Acceptance tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    services:
-      mariadb:
-        image: mariadb:10.10
-        env:
-          MYSQL_DATABASE: build_bruh
-          MYSQL_USER: build_bruh
-          MYSQL_PASSWORD: build_bruh
-          MYSQL_ROOT_PASSWORD: build_bruh
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=5s --health-timeout=5s --health-retries=20
-    defaults:
-      run:
-        working-directory: build-bro-acceptance
+    env:
+      API_IMAGE: ghcr.io/esistegalaber/build-bro-api:${{ inputs.api_tag || 'main' }}
+      UI_IMAGE: ghcr.io/esistegalaber/build-bro-ui:${{ inputs.ui_tag || 'main' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          path: build-bro-acceptance
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: esistegalaber/build-bro-api
-          ref: ${{ inputs.api_ref || 'main' }}
-          path: build-bro-api
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: esistegalaber/build-bro-ui
-          ref: ${{ inputs.ui_ref || 'main' }}
-          path: build-bro-ui
-
-      - name: Set up JDK 25
-        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-          cache: maven
-          cache-dependency-path: build-bro-api/pom.xml
 
       - name: Use Node.js (.nvmrc)
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version-file: build-bro-acceptance/.nvmrc
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: |
-            build-bro-acceptance/package-lock.json
-            build-bro-ui/package-lock.json
-
-      # Compile ahead, so the API's start in Playwright's webServer stays within its timeout
-      - name: Build the API
-        working-directory: build-bro-api
-        run: ./mvnw -B -q -DskipTests compile
-
-      # ng serve needs no install scripts
-      - name: Install the UI
-        working-directory: build-bro-ui
-        run: npm ci --ignore-scripts
 
       - name: Install
         run: npm ci
@@ -103,10 +58,18 @@ jobs:
       - name: Acceptance tests
         run: npx playwright test
 
+      # "A run names what it tested": the image references and digests support/stack.ts wrote
+      - name: Images under test
+        if: ${{ !cancelled() && hashFiles('container-logs/images.md') != '' }}
+        run: cat container-logs/images.md >> "$GITHUB_STEP_SUMMARY"
+
+      # The report, plus the API's and the UI's logs (container-logs/)
       - name: Keep the report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report
-          path: build-bro-acceptance/playwright-report/
+          path: |
+            playwright-report/
+            container-logs/
           retention-days: 14
