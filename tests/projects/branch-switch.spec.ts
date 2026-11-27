@@ -1,6 +1,6 @@
 import {expect, test} from '../../support/fixtures'
 
-// backend's `next` branch is active in testdata.sql. The page hides inactive branches until
+// backend's `next` branch is active in data/testdata.sql. The page hides inactive branches until
 // "Show inactive" is switched on, and forgets that switch on reload.
 test.describe('turning a branch off and on', () => {
   test('its state survives a reload', async ({projectsPage}) => {

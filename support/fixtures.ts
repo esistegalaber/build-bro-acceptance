@@ -8,7 +8,7 @@ import {HomePage} from './pages/home.page'
 import {ProjectsPage} from './pages/projects.page'
 
 type TestFixtures = {
-  /** Automatic: every test starts from build-bro-api's testdata.sql. */
+  /** Automatic: every test starts from data/testdata.sql. */
   resetDatabase: void
   /** Calls the API directly, for example to create data a test needs or to check a result. */
   api: APIRequestContext
