@@ -73,3 +73,35 @@ Any image reference works: a release (`:1.2.0`), one commit of `main` (`:sha-abc
 It runs on push, on pull requests, nightly, and by hand (`workflow_dispatch`, with an image tag for the API
 and one for the UI, e.g. `pr-42`). The job summary names the images and their digests. The HTML report and
 `container-logs/` are kept as the `playwright-report` artifact.
+
+## Testing API and UI changes together
+
+To check that changes in build-bro-api and build-bro-ui work together before they are merged, run the suite
+against the images of their pull requests. Each open PR has an image tagged `pr-<N>`.
+
+**In CI** (the run shows on the Actions tab, with the report as an artifact):
+
+```bash
+gh workflow run build.yml -R esistegalaber/build-bro-acceptance -f api_tag=pr-42 -f ui_tag=pr-17
+```
+
+Or on GitHub: Actions → "Acceptance tests" → Run workflow, and enter the two tags. Leave one at `main` to test a single
+PR against the other project's `main`.
+
+**Locally:**
+
+```bash
+API_IMAGE=ghcr.io/esistegalaber/build-bro-api:pr-42 UI_IMAGE=ghcr.io/esistegalaber/build-bro-ui:pr-17 npm test
+```
+
+Which states can be tested:
+
+| Tag | Image of | Exists |
+|---|---|---|
+| `main` | the newest commit on `main` | always |
+| `sha-<7>` | one commit of `main` | always |
+| `pr-<N>` | the newest commit of PR `N` | while the PR is open; deleted when it closes |
+| `X.Y.Z`, `X.Y`, `latest` | a release `vX.Y.Z` | always |
+
+A branch without a PR has no image, so open a PR (a draft is enough) to test it. Locally you can also build an
+image yourself and pass its name, e.g. `UI_IMAGE=build-bro-ui:dev npm test`.
