@@ -11,6 +11,7 @@ import {DeploymentsPage} from './pages/deployments.page'
 import {EditBuildSetPage} from './pages/edit-build-set.page'
 import {HomePage} from './pages/home.page'
 import {ProjectsPage} from './pages/projects.page'
+import {ServersPage} from './pages/servers.page'
 
 type TestFixtures = {
   /** Automatic: every test starts from data/testdata.sql. */
@@ -23,6 +24,7 @@ type TestFixtures = {
   buildSetsPage: BuildSetsPage
   editBuildSetPage: EditBuildSetPage
   deploymentsPage: DeploymentsPage
+  serversPage: ServersPage
   /** The alert panel above every page */
   alert: Alert
 }
@@ -82,6 +84,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
   deploymentsPage: async ({page}, use) => {
     await use(new DeploymentsPage(page))
+  },
+  serversPage: async ({page}, use) => {
+    await use(new ServersPage(page))
   },
 
   // Shared parts of every page (support/pages/components/)
