@@ -5,10 +5,20 @@ export class ProjectsPage {
   readonly heading: Locator
   /** Also shows inactive projects and branches. Off after every page load. */
   readonly showInactiveSwitch: Locator
+  /** "3 projects": the number of projects shown, after the search */
+  readonly count: Locator
+  readonly searchInput: Locator
+  /** The message of a search that matches nothing */
+  readonly searchEmptyState: Locator
+  readonly clearSearchButton: Locator
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', {name: 'Projects', exact: true})
     this.showInactiveSwitch = page.getByRole('checkbox', {name: 'Show inactive'})
+    this.count = page.getByTestId('projects-count')
+    this.searchInput = page.getByRole('searchbox', {name: 'Search projects and branches'})
+    this.searchEmptyState = page.getByTestId('projects-empty')
+    this.clearSearchButton = this.searchEmptyState.getByRole('button', {name: 'Clear search'})
   }
 
   async open(): Promise<void> {
@@ -27,9 +37,34 @@ export class ProjectsPage {
     await this.showInactiveSwitch.click()
   }
 
+  /** Searches project and branch names; the cards narrow to what matches. */
+  async search(text: string): Promise<void> {
+    await this.searchInput.fill(text)
+  }
+
+  /** "Clear search" in the empty state of a search without a match. */
+  async clearSearch(): Promise<void> {
+    await this.clearSearchButton.click()
+  }
+
   /** A project's card, by its name. */
   project(name: string): Locator {
     return this.page.getByRole('region', {name, exact: true})
+  }
+
+  /** The names of the branches in a project's card, one element each. */
+  branchNames(project: string): Locator {
+    return this.project(project).getByTestId('branch-name')
+  }
+
+  /** A project's summary, such as "4 branches · 1 inactive". */
+  summary(project: string): Locator {
+    return this.project(project).getByTestId('project-summary')
+  }
+
+  /** The "Inactive" badge of a project. */
+  projectInactive(project: string): Locator {
+    return this.project(project).getByTestId('project-inactive')
   }
 
   /** A branch's row in its project's card. */

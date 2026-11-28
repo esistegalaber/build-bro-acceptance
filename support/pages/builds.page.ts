@@ -10,6 +10,10 @@ export class BuildsPage {
   // so those go by test ID.
   readonly projectSelect: Locator
   readonly branchSelect: Locator
+  /** The choices of the project filter, "All projects" first */
+  readonly projectOptions: Locator
+  /** The choices of the branch filter, "All branches" first. They belong to the chosen project. */
+  readonly branchOptions: Locator
   readonly minBuildNumberInput: Locator
   readonly maxBuildNumberInput: Locator
   readonly pageSizeSelect: Locator
@@ -39,6 +43,8 @@ export class BuildsPage {
     const filters = page.getByRole('form', {name: 'Filters'})
     this.projectSelect = filters.getByTestId('project-select')
     this.branchSelect = filters.getByTestId('branch-select')
+    this.projectOptions = this.projectSelect.getByRole('option')
+    this.branchOptions = this.branchSelect.getByRole('option')
     this.minBuildNumberInput = filters.getByLabel('Build number from')
     this.maxBuildNumberInput = filters.getByTestId('max-build-number-input')
     this.pageSizeSelect = filters.getByTestId('page-size-select')

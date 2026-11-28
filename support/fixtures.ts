@@ -7,6 +7,7 @@ import {env} from './env'
 import {BuildSetsPage} from './pages/build-sets.page'
 import {BuildsPage} from './pages/builds.page'
 import {Alert} from './pages/components/alert'
+import {SideNav} from './pages/components/side-nav'
 import {DeploymentsPage} from './pages/deployments.page'
 import {EditBuildSetPage} from './pages/edit-build-set.page'
 import {HomePage} from './pages/home.page'
@@ -27,6 +28,8 @@ type TestFixtures = {
   serversPage: ServersPage
   /** The alert panel above every page */
   alert: Alert
+  /** The navigation "Main" in the side bar */
+  sideNav: SideNav
 }
 
 type WorkerFixtures = {
@@ -92,6 +95,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   // Shared parts of every page (support/pages/components/)
   alert: async ({page}, use) => {
     await use(new Alert(page))
+  },
+  sideNav: async ({page}, use) => {
+    await use(new SideNav(page))
   },
 })
 
