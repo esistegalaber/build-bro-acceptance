@@ -4,6 +4,7 @@ import {type APIRequestContext, test as base, expect} from '@playwright/test'
 import type {Connection} from 'mariadb'
 import {connectToDatabase, resetDatabase} from './database'
 import {env} from './env'
+import {BuildsPage} from './pages/builds.page'
 import {HomePage} from './pages/home.page'
 import {ProjectsPage} from './pages/projects.page'
 
@@ -14,6 +15,7 @@ type TestFixtures = {
   api: APIRequestContext
   homePage: HomePage
   projectsPage: ProjectsPage
+  buildsPage: BuildsPage
 }
 
 type WorkerFixtures = {
@@ -59,6 +61,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
   projectsPage: async ({page}, use) => {
     await use(new ProjectsPage(page))
+  },
+  buildsPage: async ({page}, use) => {
+    await use(new BuildsPage(page))
   },
 })
 
