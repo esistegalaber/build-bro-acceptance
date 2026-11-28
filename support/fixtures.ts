@@ -7,6 +7,7 @@ import {env} from './env'
 import {BuildSetsPage} from './pages/build-sets.page'
 import {BuildsPage} from './pages/builds.page'
 import {Alert} from './pages/components/alert'
+import {DeploymentsPage} from './pages/deployments.page'
 import {EditBuildSetPage} from './pages/edit-build-set.page'
 import {HomePage} from './pages/home.page'
 import {ProjectsPage} from './pages/projects.page'
@@ -21,6 +22,7 @@ type TestFixtures = {
   buildsPage: BuildsPage
   buildSetsPage: BuildSetsPage
   editBuildSetPage: EditBuildSetPage
+  deploymentsPage: DeploymentsPage
   /** The alert panel above every page */
   alert: Alert
 }
@@ -77,6 +79,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
   editBuildSetPage: async ({page}, use) => {
     await use(new EditBuildSetPage(page))
+  },
+  deploymentsPage: async ({page}, use) => {
+    await use(new DeploymentsPage(page))
   },
 
   // Shared parts of every page (support/pages/components/)

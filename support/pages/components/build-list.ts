@@ -32,9 +32,12 @@ export class BuildList {
     return this.rows.filter({has: this.toggle(project, branch, buildNumber)})
   }
 
-  /** Expands a build's row to show its ID and labels. */
+  /**
+   * Expands a build's row to show its ID and labels. Looks only in the list's own rows: the same build can be
+   * in several lists on one page (a build in two deployments).
+   */
   async expand(project: string, branch: string, buildNumber: number): Promise<void> {
-    await this.toggle(project, branch, buildNumber).check()
+    await this.row(project, branch, buildNumber).getByRole('checkbox').check()
   }
 
   /**
