@@ -4,7 +4,10 @@ import {type APIRequestContext, test as base, expect} from '@playwright/test'
 import type {Connection} from 'mariadb'
 import {connectToDatabase, resetDatabase} from './database'
 import {env} from './env'
+import {BuildSetsPage} from './pages/build-sets.page'
 import {BuildsPage} from './pages/builds.page'
+import {Alert} from './pages/components/alert'
+import {EditBuildSetPage} from './pages/edit-build-set.page'
 import {HomePage} from './pages/home.page'
 import {ProjectsPage} from './pages/projects.page'
 
@@ -16,6 +19,10 @@ type TestFixtures = {
   homePage: HomePage
   projectsPage: ProjectsPage
   buildsPage: BuildsPage
+  buildSetsPage: BuildSetsPage
+  editBuildSetPage: EditBuildSetPage
+  /** The alert panel above every page */
+  alert: Alert
 }
 
 type WorkerFixtures = {
@@ -64,6 +71,17 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
   buildsPage: async ({page}, use) => {
     await use(new BuildsPage(page))
+  },
+  buildSetsPage: async ({page}, use) => {
+    await use(new BuildSetsPage(page))
+  },
+  editBuildSetPage: async ({page}, use) => {
+    await use(new EditBuildSetPage(page))
+  },
+
+  // Shared parts of every page (support/pages/components/)
+  alert: async ({page}, use) => {
+    await use(new Alert(page))
   },
 })
 
