@@ -99,9 +99,11 @@ Which states can be tested:
 | Tag | Image of | Exists |
 |---|---|---|
 | `main` | the newest commit on `main` | always |
-| `sha-<7>` | one commit of `main` | always |
+| `sha-<7>` | one commit of `main` | for the 20 newest commits; a weekly cleanup deletes older ones |
 | `pr-<N>` | the newest commit of PR `N` | while the PR is open; deleted when it closes |
 | `X.Y.Z`, `X.Y`, `latest` | a release `vX.Y.Z` | always |
 
-A branch without a PR has no image, so open a PR (a draft is enough) to test it. Locally you can also build an
-image yourself and pass its name, e.g. `UI_IMAGE=build-bro-ui:dev npm test`.
+A branch without a PR has no image, so open a PR (a draft is enough) to test it. PRs from Dependabot and from
+forks get no published image either: their CI builds and checks it, but has no token to push it.
+
+Locally you can also build an image yourself and pass its name, e.g. `UI_IMAGE=build-bro-ui:dev npm test`.
